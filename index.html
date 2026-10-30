@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Local Rules Primers</title>
+<title>Consigliere Court Rules</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -916,6 +916,12 @@ details.stgroup .stname{letter-spacing:.06em!important;font-size:13.5px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--obbg:rgba(158,194,255,.10)}}
 .lcq.openbar{background:var(--obbg)!important;border-left:6px solid var(--stblue,#1D4ED8)!important}
 .lcq.openbar>span:first-child{color:var(--stblue,#1D4ED8);font-weight:700;letter-spacing:.02em}
+/* "Open bars" pill inside the black page bar */
+.pagebar.hasr{display:flex!important;align-items:center;justify-content:space-between;gap:10px;padding-right:8px!important}
+.pagebar.hasr>span{min-width:0}
+.barfilt{flex:none;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:var(--bg);color:var(--ink);font:inherit;font-size:11px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.barfilt[aria-pressed="true"]{background:#1D4ED8;color:#fff;box-shadow:0 0 0 2px var(--bg)}
+@media (max-width:340px){.barfilt{padding:0 10px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -23535,15 +23541,15 @@ function markHTML(){const h=location.hash.replace("#","");
   if(APP)return `<span class="mlk mtop">APPELLATE</span><span class="mini"><span class="c">C</span>ONSIGLIE<span>R</span>E</span><span class="mlk mbot">RULES</span>`;
   if(TOP)return `<span class="mlk mtop">COURT</span><span class="mini"><span class="c">C</span>ONSIGLIE<span>R</span>E</span><span class="mlk mbot">RULES</span>`;
   return `<span class="mlk mtop">FEDERAL COURT</span><span class="mini">CONSIG<span>L</span>IE<span>R</span>E</span><span class="mlk mbot">LOCAL RULES</span>`}
-function bar(title,back,right){return `<div class="topbar"><button class="homebtn brandhome" data-home aria-label="Home"><span class="hh" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff"><path d="M12 2.5 1.5 11.2l1.3 1.6L4 11.8V21.5h6.2v-6.3h3.6v6.3H20v-9.7l1.2 1l1.3-1.6Z"/></svg></span><span class="minilock">${markHTML()}</span></button>${back?`<button class="crumb backbtn" data-back="${back[0]}" aria-label="Back to ${esc(back[1])}">‹ Back</button>`:`<button class="crumb backbtn" data-goback aria-label="Back">‹ Back</button>`}</div>${title?`<div class="pagebar"><span>${esc(title)}</span></div>`:""}`}
+function bar(title,back,right){return `<div class="topbar"><button class="homebtn brandhome" data-home aria-label="Home"><span class="hh" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff"><path d="M12 2.5 1.5 11.2l1.3 1.6L4 11.8V21.5h6.2v-6.3h3.6v6.3H20v-9.7l1.2 1l1.3-1.6Z"/></svg></span><span class="minilock">${markHTML()}</span></button>${back?`<button class="crumb backbtn" data-back="${back[0]}" aria-label="Back to ${esc(back[1])}">‹ Back</button>`:`<button class="crumb backbtn" data-goback aria-label="Back">‹ Back</button>`}</div>${title?`<div class="pagebar${right&&String(right).includes("barfilt")?" hasr":""}"><span>${esc(title)}</span>${right&&String(right).includes("barfilt")?right:""}</div>`:""}`}
 
-const FNAME={adm:"courts where RLG attorneys are admitted",loc:"courts where RLG serves as local counsel",col:"courts where we refer matters to an ally",phv:"courts where we have appeared pro hac vice"};
+const FNAME={adm:"courts where RLG attorneys are admitted",loc:"courts where RLG serves as local counsel",col:"courts where we refer matters to an ally",phv:"courts where we have appeared pro hac vice",ob:"courts that admit lawyers without their state bar"};
 function applyFilt(){const f=S.filt||"";const lg=app.querySelector(".legend.filt");if(!lg)return;
- lg.querySelectorAll("[data-filt]").forEach(b=>{const on=b.dataset.filt===f;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on)});
+ app.querySelectorAll("[data-filt]").forEach(b=>{const on=b.dataset.filt===f;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on)});
  lg.classList.toggle("active",!!f);
- let n=0;app.querySelectorAll(".stgroup").forEach(g=>{let vis=0,st=0;g.querySelectorAll(".ctile").forEach(t=>{if(t.classList.contains("sttile")||t.classList.contains("circtile")){t.hidden=false;st++;return}const show=!f||!!t.querySelector(".mk."+f);t.hidden=!show;if(show)vis++});g.hidden=!(vis||st);if(g.tagName==="DETAILS")g.open=false;n+=vis});
+ let n=0;app.querySelectorAll(".stgroup").forEach(g=>{let vis=0,st=0;g.querySelectorAll(".ctile").forEach(t=>{if(t.classList.contains("sttile")||t.classList.contains("circtile")){t.hidden=false;st++;return}const show=!f||(f==="ob"?t.dataset.ob==="1":!!t.querySelector(".mk."+f));t.hidden=!show;if(show)vis++});g.hidden=!(vis||st);if(g.tagName==="DETAILS")g.open=false;n+=vis});
  const sh=lg.querySelector(".fshow");if(f){sh.hidden=false;sh.innerHTML=`Showing ${n} ${esc(FNAME[f])}.`}else sh.hidden=true}
-function wireFilt(){const lg=app.querySelector(".legend.filt");if(!lg)return;lg.querySelectorAll("[data-filt]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const v=b.dataset.filt;S.filt=v&&S.filt===v?"":v;applyFilt()});
+function wireFilt(){const lg=app.querySelector(".legend.filt");if(!lg)return;app.querySelectorAll("[data-filt]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const v=b.dataset.filt;S.filt=v&&S.filt===v?"":v;applyFilt()});
   /* the page-title bar is the way back to the full list: no label, it just works */
   const pb=app.querySelector(".pagebar");if(pb&&!pb.dataset.reset){pb.dataset.reset="1";pb.setAttribute("role","button");pb.tabIndex=0;pb.setAttribute("aria-label",(pb.textContent.trim()||"Page")+". Show everything.");
     const clear=e=>{if(e)e.preventDefault();if(S.filt){S.filt="";applyFilt()}window.scrollTo({top:0,behavior:"smooth"})};
@@ -23622,10 +23628,10 @@ function counsel(){
   document.title="Pro Hac Vice Guide";
   const tile=c=>{const d=LC[c.id];
     const pf="";
-    if(!d)return `<button class="ctile pend" data-go="lc-${c.id}">${rlgPill(c)}<b>${esc(c.abbr)}</b>${pf}<i>${pf?"":"Coming soon"}</i></button>`;
+    if(!d)return `<button class="ctile pend" data-ob="${OPENBAR[c.id]?1:0}" data-go="lc-${c.id}">${rlgPill(c)}<b>${esc(c.abbr)}</b>${pf}<i>${pf?"":"Coming soon"}</i></button>`;
     const us=RLG_LOCAL.includes(c.id);
-    return `<button class="ctile lct ${d.need}" data-go="lc-${c.id}">${rlgPill(c)}<b>${esc(c.abbr)}${UNCONF[c.id]?"*":""}</b><span class="need">${esc(NEEDTXT[d.need])}</span>${pf}</button>`};
-  app.innerHTML=bar("Pro Hac Vice Guide")+`<p class="cap" style="margin:0 0 4px">Tap a court for sponsor rules, certificates, disclosures, fees, limits, and a checklist.</p>`+LEGEND+groupedGrid(DSORTED,tile)+`<div class="faq"><em class="mk col">${pi(ICON_ALLY)}RLG ally</em><h4>Why not sponsor here?</h4><p>Sometimes the court requires local counsel to have an office in the district, and we don’t have one there. Other times, we think someone else is the best person for the job in that district, and we’d rather send you to them.</p></div>`;
+    return `<button class="ctile lct ${d.need}" data-ob="${OPENBAR[c.id]?1:0}" data-go="lc-${c.id}">${rlgPill(c)}<b>${esc(c.abbr)}${UNCONF[c.id]?"*":""}</b><span class="need">${esc(NEEDTXT[d.need])}</span>${pf}</button>`};
+  app.innerHTML=bar("Pro Hac Vice Guide",null,`<button class="barfilt" data-filt="ob" aria-pressed="false">Open bars</button>`)+`<p class="cap" style="margin:0 0 4px">Tap a court for sponsor rules, certificates, disclosures, fees, limits, and a checklist.</p>`+LEGEND+groupedGrid(DSORTED,tile)+`<div class="faq"><em class="mk col">${pi(ICON_ALLY)}RLG ally</em><h4>Why not sponsor here?</h4><p>Sometimes the court requires local counsel to have an office in the district, and we don’t have one there. Other times, we think someone else is the best person for the job in that district, and we’d rather send you to them.</p></div>`;
   wire();
 }
 function shortOffice(o){if(/^No office/.test(o))return "No office rule";if(/anywhere in California/.test(o))return "Office in California";if(/Connecticut/.test(o))return "Office in Connecticut";if(/resident/.test(o))return "Nevada resident";if(/live in the district/.test(o))return "Lives or offices in district";if(/district/.test(o))return "Office in the district";return o}
