@@ -1,0 +1,7 @@
+# Cloudflare Pages: always check for a newer app; never cache the version marker.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/version.json
+  Cache-Control: no-store
