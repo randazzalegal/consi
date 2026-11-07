@@ -1,8 +1,12 @@
 // Private dashboard: /api/stats?key=YOUR_KEY  (key is the STATS_KEY secret set in Cloudflare; never stored in this public repo)
 export async function onRequestGet({ request, env }) {
-  const key = new URL(request.url).searchParams.get("key") || "";
-  if (!env.STATS_KEY || key !== env.STATS_KEY) return new Response("Not found", { status: 404 });
-  if (!env.DB) return new Response("The database isn’t connected yet.", { status: 200, headers: { "content-type": "text/plain; charset=utf-8" } });
+  // Compare letters and digits only, so a dash or dot that a phone drops or adds at the end of the link doesn't matter.
+  const norm = v => String(v || "").replace(/[^A-Za-z0-9]/g, "");
+  const key = norm(new URL(request.url).searchParams.get("key"));
+  const page = (msg, status) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Consi visitors</title><body style="font:17px/1.5 -apple-system,system-ui,sans-serif;margin:24px">${msg}</body>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  if (!env.STATS_KEY) return page("<p>The dashboard key (STATS_KEY) isn’t set for this site yet.</p>", 200);
+  if (!key || key !== norm(env.STATS_KEY)) return page("<p>Not found.</p>", 404);
+  if (!env.DB) return page("<p>The database isn’t connected yet.</p>", 200);
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS visits (id TEXT, day TEXT, ts INTEGER, build TEXT)").run();
   const q = async (sql, ...a) => (await env.DB.prepare(sql).bind(...a).first()) || {};
   const all = async (sql, ...a) => ((await env.DB.prepare(sql).bind(...a).all()).results) || [];
