@@ -21,6 +21,8 @@ export async function onRequestPost({ request, env }) {
     if (env.DB) {
       const day = new Date().toISOString().slice(0, 10);
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS asks (id TEXT, day TEXT, n INTEGER, PRIMARY KEY (id, day))").run();
+      // Retention (privacy policy): per-device daily AI counts are deleted after 30 days.
+      if (Math.random() < 0.05) await env.DB.prepare("DELETE FROM asks WHERE day < ?").bind(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)).run();
       const all = await env.DB.prepare("SELECT COALESCE(SUM(n),0) t FROM asks WHERE day = ?").bind(day).first();
       if ((all && all.t) >= ALL_DAY) return json({ limit: 1, msg: "Consi’s AI answers are at today’s limit. The regular results below still work." });
       if (id) {
