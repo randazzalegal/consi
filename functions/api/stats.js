@@ -18,6 +18,10 @@ export async function onRequestGet({ request, env }) {
   const ret = await q("SELECT COUNT(*) n FROM (SELECT id FROM visits GROUP BY id HAVING COUNT(DISTINCT day) > 1)");
   const days = await all("SELECT day, COUNT(*) v, COUNT(DISTINCT id) u FROM visits WHERE day >= ? GROUP BY day ORDER BY day DESC", d(29));
   const dist = await all("SELECT CASE WHEN c=1 THEN '1' WHEN c<=5 THEN '2–5' WHEN c<=20 THEN '6–20' ELSE '21+' END b, COUNT(*) n FROM (SELECT COUNT(*) c FROM visits GROUP BY id) GROUP BY b");
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS misses (q TEXT, n INTEGER, day TEXT, ts INTEGER, build TEXT)").run();
+  const esc = v => String(v || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const miss = await all("SELECT lower(q) q, COUNT(*) c, SUM(CASE WHEN n=0 THEN 1 ELSE 0 END) z, MAX(day) last FROM misses WHERE day >= ? GROUP BY lower(q) ORDER BY c DESC, last DESC LIMIT 100", d(29));
+  const missN = await q("SELECT COUNT(*) n FROM misses WHERE day >= ?", d(29));
   const f = n => Number(n || 0).toLocaleString("en-US"), avg = r => r.u ? (r.v / r.u).toFixed(1) : "0";
   const row = (l, r) => `<tr><td>${l}</td><td>${f(r.u)}</td><td>${f(r.v)}</td><td>${avg(r)}</td></tr>`;
   const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Consi visitors</title>
@@ -26,6 +30,7 @@ export async function onRequestGet({ request, env }) {
 <p><b>${f(ret.n)}</b> users have come back on more than one day.</p>
 <h1>Visits per user, all time</h1><table><tr><th>Visits</th><th>Users</th></tr>${dist.map(r => `<tr><td>${r.b}</td><td>${f(r.n)}</td></tr>`).join("")}</table>
 <h1>By day, last 30 days</h1><table><tr><th>Day</th><th>Users</th><th>Visits</th><th>Per user</th></tr>${days.map(r => `<tr><td>${r.day}</td><td>${f(r.u)}</td><td>${f(r.v)}</td><td>${avg(r)}</td></tr>`).join("")}</table>
+<h1>Searches Consi couldn’t answer, last 30 days</h1><p>${f(missN.n)} searches found one result or none. Most frequent first; “No results” counts the ones that found nothing at all.</p><table><tr><th>Search</th><th>Times</th><th>No results</th><th>Last</th></tr>${miss.map(r => `<tr><td>${esc(r.q)}</td><td>${f(r.c)}</td><td>${f(r.z)}</td><td>${r.last}</td></tr>`).join("") || `<tr><td colspan="4">None yet.</td></tr>`}</table>
 <p>“Users” are devices: a phone and a laptop count as two, and someone who clears their browser data counts as new. Times are UTC days.</p>`;
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
