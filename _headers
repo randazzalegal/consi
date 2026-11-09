@@ -7,3 +7,5 @@
   Cache-Control: no-store
 /sw.js
   Cache-Control: no-cache
+/sem-docs.json
+  Cache-Control: no-cache
