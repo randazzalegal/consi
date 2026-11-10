@@ -9,6 +9,8 @@ export async function onRequestPost({ request, env }) {
     const build = String(b.v || "").replace(/[^a-z0-9]/gi, "").slice(0, 16);
     const now = Date.now(), day = new Date(now).toISOString().slice(0, 10);
     await env.DB.prepare("CREATE TABLE IF NOT EXISTS visits (id TEXT, day TEXT, ts INTEGER, build TEXT)").run();
+    const c = await env.DB.prepare("SELECT COUNT(*) c FROM visits WHERE day = ?").bind(day).first();
+    if (c && c.c >= 20000) return new Response(null, { status: 204 });      // daily cap: bounds database writes even under a flood
     await env.DB.prepare("INSERT INTO visits (id, day, ts, build) VALUES (?, ?, ?, ?)").bind(id, day, now, build).run();
     // Retention (privacy policy): visit records are deleted after 13 months. Runs on about 1 in 50 visits.
     if (Math.random() < 0.02) await env.DB.prepare("DELETE FROM visits WHERE ts < ?").bind(now - 396 * 864e5).run();

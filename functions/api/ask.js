@@ -1,7 +1,7 @@
 // Consi AI answers. Uses Cloudflare Workers AI (binding AI) on ONLY the Consi excerpts the app sends.
 // No question text is stored. Rate limits use the D1 binding DB (per anonymous device ID and per day overall).
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-const PER_DEVICE_DAY = 40, ALL_DAY = 1500;
+const PER_DEVICE_DAY = 40, ALL_DAY = 100;   // cost cap (Nov 9, 2026): site-wide AI answers per day
 const SYS = `You are Consi's research assistant for U.S. litigators. Answer the question using ONLY the numbered sources provided; they come from Consi's summaries of federal and state court rules, judges' chambers rules, and the federal rules.
 Rules:
 - Cite every statement with the source number in square brackets, like [2] or [1][3].
