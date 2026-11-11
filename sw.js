@@ -1,10 +1,13 @@
-/* Consi service worker v2 (Nov 10, 2026). Two jobs, in this order:
+/* Consi service worker v3 (Nov 10, 2026). Three jobs, in this order:
    1) The app is ALWAYS the newest published build. On every open it asks /version.json (about 20 bytes, never cached) which build is
       current. If the copy saved on the device is older, it downloads the new page FIRST, checks that the page really is that build
       (retrying with fresh URLs if a CDN edge still serves the old one), saves it, and opens it.
    2) The app opens fast and works with a weak or no signal: if the check can't be made in a couple of seconds, it opens the saved copy.
+   3) Rulebook files (lr/<n>.<hash>.js) and state pages (st/<code>.<hash>.js) are saved on the device the first time they load, so they open
+      again with no signal. They are named by content hash, so a saved copy is never stale. At most 150 are kept (oldest dropped first).
    Never touches /api/. When this worker replaces an older one, it clears the old saved copies and reloads open Consi windows. */
-const C = "consi-shell-v2", KEY = "/__consi_shell", BID = /consi-autoupdate\*\/\(function\(\)\{var V="([0-9a-z]+)"/, HTML = "text/html; charset=utf-8";
+const C = "consi-shell-v2", D = "consi-data-v1", KEEP = 150, KEY = "/__consi_shell", BID = /consi-autoupdate\*\/\(function\(\)\{var V="([0-9a-z]+)"/, HTML = "text/html; charset=utf-8";
+const isData = u => { const p = new URL(u); return p.origin === self.location.origin && /^\/(lr|st)\/[^/]+\.js$/.test(p.pathname); };
 const isShell = u => { const p = new URL(u).pathname; return p === "/" || p === "/index.html"; };
 const mk = (body, v) => new Response(body, { headers: { "content-type": HTML, "x-consi-v": v || "" } });
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -28,12 +31,22 @@ async function save(o) { const cache = await caches.open(C); await cache.put(KEY
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil((async () => {
   let upgraded = false;
-  for (const k of await caches.keys()) if (k !== C) { upgraded = true; await caches.delete(k); }
+  for (const k of await caches.keys()) if (k !== C && k !== D) { upgraded = true; await caches.delete(k); }
   await self.clients.claim();
   if (upgraded) for (const c of await self.clients.matchAll({ type: "window" })) { try { await c.navigate(c.url); } catch (e) {} }
 })()));
 self.addEventListener("fetch", e => {
   const r = e.request;
+  if (r.method === "GET" && isData(r.url)) {             // saved rulebook and state-page files: cache first, then the network
+    e.respondWith((async () => {
+      const cache = await caches.open(D), hit = await cache.match(r.url);
+      if (hit) return hit;
+      const res = await fetch(r);
+      if (res.ok) e.waitUntil((async () => { await cache.put(r.url, res.clone()); const ks = await cache.keys(); for (let i = 0; i < ks.length - KEEP; i++) await cache.delete(ks[i]); })().catch(() => {}));
+      return res;
+    })());
+    return;
+  }
   if (r.method !== "GET" || r.mode !== "navigate" || !isShell(r.url)) return;
   e.respondWith((async () => {
     const cache = await caches.open(C), saved = await cache.match(KEY);
