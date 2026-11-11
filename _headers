@@ -17,3 +17,6 @@
 # Rule text groups are named by content hash (lr/<n>.<hash>.js), so they can be cached for good, too
 /lr/*
   Cache-Control: public, max-age=31536000, immutable
+# Judge photos are named by content hash (ph/<hash>.webp)
+/ph/*
+  Cache-Control: public, max-age=31536000, immutable
