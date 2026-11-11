@@ -20,3 +20,6 @@
 # Judge photos are named by content hash (ph/<hash>.webp)
 /ph/*
   Cache-Control: public, max-age=31536000, immutable
+# D.P.R. exam-prep module, named by content hash
+/bp/*
+  Cache-Control: public, max-age=31536000, immutable
