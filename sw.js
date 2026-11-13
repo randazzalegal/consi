@@ -5,11 +5,11 @@
    2) The app opens fast and works with a weak or no signal: if the check can't be made in a couple of seconds, it opens the saved copy.
    3) Rulebook files (lr/<n>.<hash>.js), state pages (st/<code>.<hash>.js), and the D.P.R. exam-prep module (bp/<hash>.js) are saved on the device the first time they load, so they open
       again with no signal. They are named by content hash, so a saved copy is never stale. At most 150 are kept (oldest dropped first).
-   Judge photos (ph/<hash>.webp) are saved the same way, in their own cache (at most 1,500 kept).
+   Judge photos (ph/<hash>.webp) and the Nevada and Massachusetts header marks (nv/ and ma/ *-sign-*.webp, fetched only on those states’ pages) are saved the same way, in their own cache (at most 1,500 kept).
    Never touches /api/. When this worker replaces an older one, it clears the old saved copies and reloads open Consi windows. */
 const C = "consi-shell-v2", D = "consi-data-v1", KEEP = 150, P = "consi-photos-v1", KEEPP = 1500, KEY = "/__consi_shell", BID = /consi-autoupdate\*\/\(function\(\)\{var V="([0-9a-z]+)"/, HTML = "text/html; charset=utf-8";
 const isData = u => { const p = new URL(u); return p.origin === self.location.origin && /^\/(lr|st|bp)\/[^/]+\.js$/.test(p.pathname); };
-const isPhoto = u => { const p = new URL(u); return p.origin === self.location.origin && /^\/ph\/[0-9a-f]+\.webp$/.test(p.pathname); };
+const isPhoto = u => { const p = new URL(u); return p.origin === self.location.origin && (/^\/ph\/[0-9a-f]+\.webp$/.test(p.pathname) || /^\/(nv|ma)\/(nv|ma)-sign-(federal|state)\.[0-9a-f]+\.webp$/.test(p.pathname)); };
 const isShell = u => { const p = new URL(u).pathname; return p === "/" || p === "/index.html"; };
 const mk = (body, v) => new Response(body, { headers: { "content-type": HTML, "x-consi-v": v || "" } });
 const wait = ms => new Promise(r => setTimeout(r, ms));
