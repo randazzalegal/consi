@@ -5,11 +5,11 @@
    2) The app opens fast and works with a weak or no signal: if the check can't be made in a couple of seconds, it opens the saved copy.
    3) Rulebook files (lr/<n>.<hash>.js), state pages (st/<code>.<hash>.js), and the D.P.R. exam-prep module (bp/<hash>.js) are saved on the device the first time they load, so they open
       again with no signal. They are named by content hash, so a saved copy is never stale. At most 150 are kept (oldest dropped first).
-   Judge photos (ph/<hash>.webp) and the Nevada, Massachusetts, Florida, and Louisiana header marks (nv/, ma/, fl/, and la/ *-sign-*.webp, fetched only on those states’ pages) are saved the same way, in their own cache (at most 1,500 kept).
+   Judge photos (ph/<hash>.webp) and the 32 state header marks (img/marks/<state>-<federal|state>.webp) are saved in their own cache (at most 1500 files). Files are named by content hash, so a saved copy is never stale. The page also asks the worker (message t:"precache") to keep all 22 once the app is idle, so every state header works offline.
    Never touches /api/. When this worker replaces an older one, it clears the old saved copies and reloads open Consi windows. */
 const C = "consi-shell-v2", D = "consi-data-v1", KEEP = 150, P = "consi-photos-v1", KEEPP = 1500, KEY = "/__consi_shell", BID = /consi-autoupdate\*\/\(function\(\)\{var V="([0-9a-z]+)"/, HTML = "text/html; charset=utf-8";
 const isData = u => { const p = new URL(u); return p.origin === self.location.origin && /^\/(lr|st|bp|tc)\/[^/]+\.js$/.test(p.pathname); };
-const isPhoto = u => { const p = new URL(u); return p.origin === self.location.origin && (/^\/ph\/[0-9a-f]+\.webp$/.test(p.pathname) || /^\/(nv|ma|fl|la)\/(nv|ma|fl|la)-sign-(federal|state)\.[0-9a-f]+\.webp$/.test(p.pathname)); };
+const isPhoto = u => { const p = new URL(u); return p.origin === self.location.origin && (/^\/ph\/[0-9a-f]+\.webp$/.test(p.pathname) || /^\/img\/marks\/[a-z]{2}-(federal|state)\.[0-9a-f]{10}\.webp$/.test(p.pathname)); };
 const isShell = u => { const p = new URL(u).pathname; return p === "/" || p === "/index.html"; };
 const mk = (body, v) => new Response(body, { headers: { "content-type": HTML, "x-consi-v": v || "" } });
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -67,6 +67,10 @@ self.addEventListener("fetch", e => {
   })());
 });
 self.addEventListener("message", e => {                  // the page asks for a refresh when it sees a newer build while open
+  if (e.data && e.data.t === "precache" && Array.isArray(e.data.urls)) {   // the page lists the state-mark files; keep them all (best effort, never blocks anything)
+    e.waitUntil((async () => { const c = await caches.open(P); for (const u of e.data.urls.slice(0, 40)) { if (!/^\/img\/marks\/[a-z]{2}-(federal|state)\.[0-9a-f]{10}\.webp$/.test(u)) continue; try { if (!(await c.match(u))) { const r = await fetch(u); if (r.ok) await c.put(u, r); } } catch (x) {} } })());
+    return;
+  }
   if (!e.data || e.data.t !== "refresh") return;
   const port = e.ports && e.ports[0];
   e.waitUntil((async () => { try { const want = await latest(4000), o = await download(want); await save(o); port && port.postMessage({ v: o.v }); } catch (err) { port && port.postMessage({ v: "" }); } })());
