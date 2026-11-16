@@ -9,7 +9,7 @@
    Never touches /api/. When this worker replaces an older one, it clears the old saved copies and reloads open Consi windows. */
 const C = "consi-shell-v2", D = "consi-data-v1", KEEP = 150, P = "consi-photos-v1", KEEPP = 1500, KEY = "/__consi_shell", BID = /consi-autoupdate\*\/\(function\(\)\{var V="([0-9a-z]+)"/, HTML = "text/html; charset=utf-8";
 const isData = u => { const p = new URL(u); return p.origin === self.location.origin && /^\/(lr|st|bp|tc)\/[^/]+\.js$/.test(p.pathname); };
-const isPhoto = u => { const p = new URL(u); return p.origin === self.location.origin && (/^\/ph\/[0-9a-f]+\.webp$/.test(p.pathname) || /^\/img\/marks\/[a-z]{2}-(federal|state)\.[0-9a-f]{10}\.webp$/.test(p.pathname)); };
+const isPhoto = u => { const p = new URL(u); return p.origin === self.location.origin && (/^\/ph\/[0-9a-f]+\.webp$/.test(p.pathname) || /^\/img\/marks\/[a-z]{2}-(federal|state)(-t)?\.[0-9a-f]{10}\.webp$/.test(p.pathname)); };
 const isShell = u => { const p = new URL(u).pathname; return p === "/" || p === "/index.html"; };
 const mk = (body, v) => new Response(body, { headers: { "content-type": HTML, "x-consi-v": v || "" } });
 const wait = ms => new Promise(r => setTimeout(r, ms));
