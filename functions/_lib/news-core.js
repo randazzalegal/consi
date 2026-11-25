@@ -4,10 +4,12 @@
 export const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 export const UA = "Mozilla/5.0 (compatible; ConsiNews/1.0; +https://consi.law)";
 
-/* kind: big = general litigation news, appeals = appellate/Supreme Court, bar = a bar association's own news. */
+/* kind: big = general litigation news, appeals = appellate/Supreme Court, bar = a bar association's own news. pen = points taken off every item from that source, so it can fill a slot on a slow day but never leads. */
 export const SOURCES = [
   { id: "volokh", name: "Volokh Conspiracy", kind: "big", feeds: ["https://reason.com/volokh/feed/"], home: "https://reason.com/volokh/" },
   { id: "instapundit", name: "Instapundit", kind: "big", feeds: ["https://instapundit.com/feed"], home: "https://instapundit.com/" },
+  { id: "howappealing", name: "How Appealing", kind: "appeals", feeds: ["https://howappealing.abovethelaw.com/feed/"], home: "https://howappealing.abovethelaw.com/" },
+  { id: "atl", name: "Above the Law", kind: "big", pen: 4, feeds: ["https://abovethelaw.com/feed/"], home: "https://abovethelaw.com/" },
   { id: "scotusblog", name: "SCOTUSblog", kind: "appeals", feeds: ["https://www.scotusblog.com/feed/"], home: "https://www.scotusblog.com/" },
   { id: "chn", name: "Courthouse News", kind: "big", feeds: ["https://www.courthousenews.com/feed/"], home: "https://www.courthousenews.com/" },
   { id: "lawcrime", name: "Law&Crime", kind: "big", feeds: ["https://lawandcrime.com/feed/"], home: "https://lawandcrime.com/" },
@@ -19,8 +21,8 @@ export const SOURCES = [
   { id: "azbar", name: "State Bar of Arizona", kind: "bar", feeds: [], home: "https://www.azbar.org/" }
 ];
 
-/* No paywalled outlets, and no Above the Law (owner's instruction), including its sister sites such as How Appealing. */
-export const BLOCK = ["law360.com", "bloomberglaw.com", "bloomberg.com", "wsj.com", "nytimes.com", "ft.com", "abovethelaw.com", "westlaw.com", "lexisnexis.com", "law.com", "americanlawyer.com", "thetimes.com", "economist.com"];
+/* No paywalled outlets. Above the Law is NOT blocked (owner's instruction): it is a low-priority source, see pen below. */
+export const BLOCK = ["law360.com", "bloomberglaw.com", "bloomberg.com", "wsj.com", "nytimes.com", "ft.com", "westlaw.com", "lexisnexis.com", "law.com", "americanlawyer.com", "thetimes.com", "economist.com"];
 
 /* Refresh windows: 7:00 a.m., 12:00 noon and 5:00 p.m. Atlantic Standard Time (UTC-4, no daylight saving). */
 export const WINDOW_HOURS_UTC = [11, 16, 21];
@@ -145,10 +147,10 @@ export function select(cands, ai, now, N = 10) {
   const sc = cands.map((c, i) => {
     let base = ai && ai[i] != null ? ai[i] : Math.min(8, kwScore(c.t) * 2);
     if (APPEALS.test(c.t)) base += 1.5;
-    return { ...c, rel: base, score: base + rec(c.d) };
+    return { ...c, rel: base, score: base + rec(c.d) - (c.pen || 0) };
   }).sort((a, b) => b.score - a.score || b.d - a.d);
   const chosen = [], per = {}, seenT = new Set(), seenU = new Set(); let bars = 0;
-  const cap = s => s.kind === "bar" ? 1 : ({ volokh: 3, chn: 3 }[s.id] || 2);
+  const cap = s => s.kind === "bar" ? 1 : ({ volokh: 3, chn: 3, howappealing: 3, atl: 1 }[s.id] || 2);
   const tryAdd = (x, th) => {
     if (chosen.length >= N || x.score < th) return false;
     const nt = normT(x.t); if (seenT.has(nt) || seenU.has(x.u)) return false;
@@ -196,7 +198,7 @@ export async function gather(sources, fetchText, cache, now, maxAgeH = 60) {
       if (!u || blocked(u)) continue;
       if (!it.d || it.d > now + HOUR || now - it.d > maxAgeH * HOUR) continue;
       if (it.t.length < 8) continue;
-      cands.push({ t: it.t.slice(0, 220), u, d: it.d, s: s.name, id: s.id, k: s.kind, kind: s.kind });
+      cands.push({ t: it.t.slice(0, 220), u, d: it.d, s: s.name, id: s.id, k: s.kind, kind: s.kind, pen: s.pen || 0 });
       st.n++;
     }
     st.ok = st.n > 0;
